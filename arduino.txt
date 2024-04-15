@@ -1,0 +1,51 @@
+#include <Servo.h>
+
+const int NumServos = 5;
+const int BaudRate = 9600;
+const char StartBit = '$';
+
+Servo servos[NumServos];  // Thumb, Index, Middle, Ring, Pinky
+int servoPins[] = {8, 9, 10, 11, 12};  // Thumb, Index, Middle, Ring, Pinky
+
+const int servoPin = 9;
+
+void setup() {
+  for (int i = 0; i < NumServos; ++i) {
+    servos[i].attach(servoPins[i]);
+    servos[i].write(0);
+    delay(1000);
+  }
+  Serial.begin(BaudRate);
+}
+
+char getChar() {
+  if (!Serial.available()) return '?';
+  char cur = Serial.read();
+  Serial.print("Char: ");
+  Serial.println(cur);
+  return cur;
+}
+
+String readSerialData() {
+  String res = "";
+  bool readStartBit = false;
+  while (Serial.available() && getChar() != StartBit) ;
+  while (res.length() != NumServos) {
+    char cur = getChar();
+    if (cur == '0' || cur == '1') res += cur;
+  }
+  return res;
+}
+
+void loop() {
+  String cur = readSerialData();
+  Serial.print("Current: ");
+  Serial.println(cur);
+  for (int i = 0; i < NumServos; ++i) {
+    int value = int(cur[i]-'0')*180;
+    if (i % 2 == 1 || i==0) {
+      value = 180 - value; // Invert the value
+    }
+    servos[i].write(value);
+  }
+}
